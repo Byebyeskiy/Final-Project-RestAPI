@@ -1,48 +1,43 @@
 ﻿using Application.Common.Interfaces;
 using Domain.VideoGames;
+using Microsoft.EntityFrameworkCore;
 
-namespace Infrastructure.Persistence.Repositories;
+namespace Infrastructure.Persistence;
 
-public class VideoGameRepository : IVideoGameRepository
+public class VideoGameRepository(ApplicationDbContext context) : IVideoGameRepository
 {
-    private readonly List<VideoGame> _videoGames = [];
-
-    public Task<IReadOnlyList<VideoGame>> GetAll(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<VideoGame>> GetAll(CancellationToken cancellationToken)
     {
-        return Task.FromResult<IReadOnlyList<VideoGame>>(_videoGames.ToList());
+        return await context.VideoGames.ToListAsync(cancellationToken);
     }
 
-    public Task<VideoGame?> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<VideoGame?> GetById(Guid id, CancellationToken cancellationToken)
     {
-        return Task.FromResult(_videoGames.FirstOrDefault(x => x.Id == id));
+        return await context.VideoGames.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
-    public Task<VideoGame?> GetByTitle(string title, CancellationToken cancellationToken)
+    public async Task<VideoGame?> GetByTitle(string title, CancellationToken cancellationToken)
     {
-        return Task.FromResult(_videoGames.FirstOrDefault(x => x.Title == title));
+        return await context.VideoGames.FirstOrDefaultAsync(x => x.Title == title, cancellationToken);
     }
 
-    public Task<VideoGame> Add(VideoGame videoGame, CancellationToken cancellationToken)
+    public async Task<VideoGame> Add(VideoGame videoGame, CancellationToken cancellationToken)
     {
-        _videoGames.Add(videoGame);
-        return Task.FromResult(videoGame);
+        await context.VideoGames.AddAsync(videoGame, cancellationToken);
+        await context.SaveChangesAsync(cancellationToken);
+        return videoGame;
     }
 
-    public Task<VideoGame> Update(VideoGame videoGame, CancellationToken cancellationToken)
+    public async Task<VideoGame> Update(VideoGame videoGame, CancellationToken cancellationToken)
     {
-        var existing = _videoGames.FirstOrDefault(x => x.Id == videoGame.Id);
-        if (existing is not null)
-        {
-            _videoGames.Remove(existing);
-        }
-
-        _videoGames.Add(videoGame);
-        return Task.FromResult(videoGame);
+        context.VideoGames.Update(videoGame);
+        await context.SaveChangesAsync(cancellationToken);
+        return videoGame;
     }
 
-    public Task Delete(VideoGame videoGame, CancellationToken cancellationToken)
+    public async Task Delete(VideoGame videoGame, CancellationToken cancellationToken)
     {
-        _videoGames.RemoveAll(x => x.Id == videoGame.Id);
-        return Task.CompletedTask;
+        context.VideoGames.Remove(videoGame);
+        await context.SaveChangesAsync(cancellationToken);
     }
 }
