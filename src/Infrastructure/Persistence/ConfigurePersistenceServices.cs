@@ -1,4 +1,5 @@
-﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.Queries;
+using Application.Common.Interfaces.Repositories;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -36,6 +37,8 @@ public static class ConfigurePersistenceServices
     private static void AddRepositories(this IServiceCollection services)
     {
         services.AddScoped<VideoGameRepository>();
+        services.AddScoped<IVideoGameQueries>(provider =>
+            provider.GetRequiredService<VideoGameRepository>());
         services.AddScoped<IVideoGameRepository>(provider =>
             provider.GetRequiredService<VideoGameRepository>());
     }

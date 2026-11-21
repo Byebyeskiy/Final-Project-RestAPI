@@ -1,4 +1,3 @@
-﻿using System.ComponentModel.DataAnnotations;
 using Domain.VideoGames;
 
 namespace Api.Dtos;
@@ -12,13 +11,13 @@ public record VideoGameDto(Guid Id, string Title, decimal Price, DateTime Releas
 }
 
 public record CreateVideoGameDto(
-    [Required, MaxLength(255)] string Title,
-    [Range(0.01, 1_000_000)] decimal Price,
+    string Title,
+    decimal Price,
     DateTime ReleaseDate,
     Platform Platform);
 
 public record UpdateVideoGameDto(
-    [Required, MaxLength(255)] string Title,
-    [Range(0.01, 1_000_000)] decimal Price,
+    string Title,
+    decimal Price,
     DateTime ReleaseDate,
     Platform Platform);

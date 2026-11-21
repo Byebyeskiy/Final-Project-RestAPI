@@ -1,10 +1,11 @@
-﻿using Application.Common.Interfaces;
+using Application.Common.Interfaces.Queries;
+using Application.Common.Interfaces.Repositories;
 using Domain.VideoGames;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
 
-public class VideoGameRepository(ApplicationDbContext context) : IVideoGameRepository
+public class VideoGameRepository(ApplicationDbContext context) : IVideoGameRepository, IVideoGameQueries
 {
     public async Task<IReadOnlyList<VideoGame>> GetAll(CancellationToken cancellationToken)
     {
