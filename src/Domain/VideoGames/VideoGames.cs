@@ -1,20 +1,20 @@
-﻿namespace Domain.VideoGames;
+namespace Domain.VideoGames;
 
 public class VideoGame
 {
-    public Guid Id { get; }
+    public VideoGameId Id { get; }
     public string Title { get; private set; }
     public decimal Price { get; private set; }
     public DateTime ReleaseDate { get; private set; }
     public Platform Platform { get; private set; }
     public DateTime CreatedAt { get; }
 
-    private VideoGame(Guid id, string title, decimal price, DateTime releaseDate,
+    private VideoGame(VideoGameId id, string title, decimal price, DateTime releaseDate,
         Platform platform, DateTime createdAt)
         => (Id, Title, Price, ReleaseDate, Platform, CreatedAt)
             = (id, title, price, releaseDate, platform, createdAt);
 
-    public static VideoGame New(Guid id, string title, decimal price,
+    public static VideoGame New(VideoGameId id, string title, decimal price,
         DateTime releaseDate, Platform platform)
         => new(id, title, price, releaseDate, platform, DateTime.UtcNow);
 
