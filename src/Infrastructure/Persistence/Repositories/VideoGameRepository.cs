@@ -1,6 +1,8 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Domain.VideoGames;
+using LanguageExt;
+using static LanguageExt.Prelude;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -12,14 +14,14 @@ public class VideoGameRepository(ApplicationDbContext context) : IVideoGameRepos
         return await context.VideoGames.ToListAsync(cancellationToken);
     }
 
-    public async Task<VideoGame?> GetById(Guid id, CancellationToken cancellationToken)
+    public async Task<Option<VideoGame>> GetById(VideoGameId id, CancellationToken cancellationToken)
     {
-        return await context.VideoGames.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+        return Optional(await context.VideoGames.FirstOrDefaultAsync(x => x.Id == id, cancellationToken));
     }
 
-    public async Task<VideoGame?> GetByTitle(string title, CancellationToken cancellationToken)
+    public async Task<Option<VideoGame>> GetByTitle(string title, CancellationToken cancellationToken)
     {
-        return await context.VideoGames.FirstOrDefaultAsync(x => x.Title == title, cancellationToken);
+        return Optional(await context.VideoGames.FirstOrDefaultAsync(x => x.Title == title, cancellationToken));
     }
 
     public async Task<VideoGame> Add(VideoGame videoGame, CancellationToken cancellationToken)

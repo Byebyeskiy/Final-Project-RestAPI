@@ -6,7 +6,7 @@ public record VideoGameDto(Guid Id, string Title, decimal Price, DateTime Releas
     Platform Platform, DateTime CreatedAt)
 {
     public static VideoGameDto FromDomainModel(VideoGame videoGame)
-        => new(videoGame.Id, videoGame.Title, videoGame.Price, videoGame.ReleaseDate,
+        => new(videoGame.Id.Value, videoGame.Title, videoGame.Price, videoGame.ReleaseDate,
             videoGame.Platform, videoGame.CreatedAt);
 }
 

@@ -1,30 +1,44 @@
 using Application.Common.Interfaces.Repositories;
+using Application.VideoGames.Exceptions;
 using Domain.VideoGames;
+using LanguageExt;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Application.VideoGames.Commands;
 
-public sealed record UpdateVideoGameCommand(Guid Id, string Title, decimal Price, DateTime ReleaseDate, Platform Platform)
-    : IRequest<VideoGame?>;
+public sealed record UpdateVideoGameCommand(VideoGameId Id, string Title, decimal Price, DateTime ReleaseDate, Platform Platform)
+    : IRequest<Either<VideoGameException, VideoGame>>;
 
-public sealed class UpdateVideoGameCommandHandler(IVideoGameRepository repository)
-    : IRequestHandler<UpdateVideoGameCommand, VideoGame?>
+public sealed class UpdateVideoGameCommandHandler(IVideoGameRepository repository, ILogger<UpdateVideoGameCommandHandler> logger)
+    : IRequestHandler<UpdateVideoGameCommand, Either<VideoGameException, VideoGame>>
 {
-    public async Task<VideoGame?> Handle(UpdateVideoGameCommand request, CancellationToken cancellationToken)
+    public async Task<Either<VideoGameException, VideoGame>> Handle(UpdateVideoGameCommand request, CancellationToken cancellationToken)
     {
-        var game = await repository.GetById(request.Id, cancellationToken);
-        if (game is null)
+        var id = request.Id;
+        try
         {
-            return null;
+            var existing = await repository.GetById(id, cancellationToken);
+            return await existing.Match<Task<Either<VideoGameException, VideoGame>>>(
+                async game =>
+                {
+                    var duplicate = await repository.GetByTitle(request.Title, cancellationToken);
+                    var conflict = duplicate.Filter(other => other.Id != id);
+                    return await conflict.Match<Task<Either<VideoGameException, VideoGame>>>(
+                        other => Task.FromResult<Either<VideoGameException, VideoGame>>(
+                            new VideoGameAlreadyExistsException(other.Id, request.Title)),
+                        async () =>
+                        {
+                            game.UpdateDetails(request.Title, request.Price, request.ReleaseDate, request.Platform);
+                            return await repository.Update(game, cancellationToken);
+                        });
+                },
+                () => Task.FromResult<Either<VideoGameException, VideoGame>>(new VideoGameNotFoundException(id)));
         }
-
-        var duplicate = await repository.GetByTitle(request.Title, cancellationToken);
-        if (duplicate is not null && duplicate.Id != request.Id)
+        catch (Exception exception) when (exception is not OperationCanceledException)
         {
-            throw new ArgumentException($"Video game with title '{request.Title}' already exists");
+            logger.LogError(exception, "Video game operation failed for {VideoGameId}", id);
+            return new VideoGameUnhandledException(id, exception);
         }
-
-        game.UpdateDetails(request.Title, request.Price, request.ReleaseDate, request.Platform);
-        return await repository.Update(game, cancellationToken);
     }
 }
