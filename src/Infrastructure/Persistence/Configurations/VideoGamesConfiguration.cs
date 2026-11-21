@@ -1,4 +1,4 @@
-﻿using Domain.VideoGames;
+using Domain.VideoGames;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -10,6 +10,9 @@ public class VideoGamesConfiguration : IEntityTypeConfiguration<VideoGame>
     public void Configure(EntityTypeBuilder<VideoGame> builder)
     {
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id)
+            .HasConversion(id => id.Value, value => new VideoGameId(value))
+            .ValueGeneratedNever();
 
         builder.Property(x => x.Title)
             .HasColumnType("varchar(255)")
