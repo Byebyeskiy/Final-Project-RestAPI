@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,6 +14,7 @@ public abstract class BaseIntegrationTest : IDisposable
     protected BaseIntegrationTest(IntegrationTestWebFactory factory)
     {
         Client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.SchemeName);
         _scope = factory.Services.CreateScope();
         Context = _scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     }
