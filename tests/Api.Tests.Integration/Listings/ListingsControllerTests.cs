@@ -1,106 +1,106 @@
 using System.Net;
 using System.Net.Http.Json;
 using Api.Dtos;
-using Domain.VideoGames;
+using Domain.Listings;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Tests.Common;
-using Tests.Data.VideoGames;
+using Tests.Data.Listings;
 using Xunit;
 
-namespace Api.Tests.Integration.VideoGames;
+namespace Api.Tests.Integration.Listings;
 
-public sealed class VideoGamesControllerTests(IntegrationTestWebFactory factory)
+public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
     : BaseIntegrationTest(factory), IClassFixture<IntegrationTestWebFactory>, IAsyncLifetime
 {
-    private const string Route = "videogames";
-    private readonly VideoGame _existing = VideoGameTestData.Existing();
+    private const string Route = "listings";
+    private readonly Listing _existing = ListingTestData.Existing();
 
     private string ExistingRoute => $"{Route}/{_existing.Id}";
 
     public async Task InitializeAsync()
     {
-        Context.VideoGames.Add(_existing);
+        Context.Listings.Add(_existing);
         await Context.SaveChangesAsync();
         Context.ChangeTracker.Clear();
     }
 
     public async Task DisposeAsync()
     {
-        await Context.VideoGames.ExecuteDeleteAsync();
+        await Context.Listings.ExecuteDeleteAsync();
         Context.ChangeTracker.Clear();
     }
 
     [Fact]
-    public async Task ShouldCreateVideoGame()
+    public async Task ShouldCreateListing()
     {
-        var game = VideoGameTestData.NewGame();
-        var request = new CreateVideoGameDto(game.Title, game.Price, game.ReleaseDate, game.Platform);
+        var game = ListingTestData.NewGame();
+        var request = new CreateListingDto(game.Title, game.Price, game.AvailableSince, game.Category);
 
         using var response = await Client.PostAsJsonAsync(Route, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Created);
-        var dto = await response.Content.ReadFromJsonAsync<VideoGameDto>();
+        var dto = await response.Content.ReadFromJsonAsync<ListingDto>();
         dto.Should().NotBeNull();
-        var saved = await Find(new VideoGameId(dto!.Id));
+        var saved = await Find(new ListingId(dto!.Id));
         AssertDetails(saved, game);
         using var readResponse = await Client.GetAsync(response.Headers.Location);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var readDto = await readResponse.Content.ReadFromJsonAsync<VideoGameDto>();
+        var readDto = await readResponse.Content.ReadFromJsonAsync<ListingDto>();
         readDto.Should().BeEquivalentTo(dto, options => options.Excluding(game => game.CreatedAt));
         readDto!.CreatedAt.Should().BeCloseTo(dto.CreatedAt, TimeSpan.FromMicroseconds(1));
     }
 
     [Fact]
-    public async Task ShouldNotCreateVideoGameBecauseTitleAlreadyTaken()
+    public async Task ShouldNotCreateListingBecauseTitleAlreadyTaken()
     {
-        var request = new CreateVideoGameDto(_existing.Title, _existing.Price,
-            _existing.ReleaseDate, _existing.Platform);
+        var request = new CreateListingDto(_existing.Title, _existing.Price,
+            _existing.AvailableSince, _existing.Category);
 
         using var response = await Client.PostAsJsonAsync(Route, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.Conflict);
-        var saved = await Context.VideoGames.AsNoTracking().SingleAsync();
+        var saved = await Context.Listings.AsNoTracking().SingleAsync();
         saved.Id.Should().Be(_existing.Id);
         AssertDetails(saved, _existing);
     }
 
     [Fact]
-    public async Task ShouldNotCreateVideoGameBecauseRequestIsInvalid()
+    public async Task ShouldNotCreateListingBecauseRequestIsInvalid()
     {
-        var request = new CreateVideoGameDto("", 0, default, (Platform)999);
+        var request = new CreateListingDto("", 0, default, (ListingCategory)999);
 
         using var response = await Client.PostAsJsonAsync(Route, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        var saved = await Context.VideoGames.AsNoTracking().SingleAsync();
+        var saved = await Context.Listings.AsNoTracking().SingleAsync();
         saved.Id.Should().Be(_existing.Id);
         AssertDetails(saved, _existing);
     }
 
     [Fact]
-    public async Task ShouldUpdateVideoGame()
+    public async Task ShouldUpdateListing()
     {
-        var game = VideoGameTestData.Updated();
-        var request = new UpdateVideoGameDto(game.Title, game.Price, game.ReleaseDate, game.Platform);
+        var game = ListingTestData.Updated();
+        var request = new UpdateListingDto(game.Title, game.Price, game.AvailableSince, game.Category);
 
         using var response = await Client.PutAsJsonAsync(ExistingRoute, request);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var dto = await response.Content.ReadFromJsonAsync<VideoGameDto>();
+        var dto = await response.Content.ReadFromJsonAsync<ListingDto>();
         dto.Should().NotBeNull();
         dto!.Id.Should().Be(_existing.Id.Value);
         AssertDetails(await Find(_existing.Id), game);
     }
 
     [Fact]
-    public async Task ShouldNotUpdateVideoGameBecauseTitleAlreadyTaken()
+    public async Task ShouldNotUpdateListingBecauseTitleAlreadyTaken()
     {
-        var other = VideoGameTestData.NewGame();
-        Context.VideoGames.Add(other);
+        var other = ListingTestData.NewGame();
+        Context.Listings.Add(other);
         await Context.SaveChangesAsync();
         Context.ChangeTracker.Clear();
-        var request = new UpdateVideoGameDto(other.Title, other.Price, other.ReleaseDate, other.Platform);
+        var request = new UpdateListingDto(other.Title, other.Price, other.AvailableSince, other.Category);
 
         using var response = await Client.PutAsJsonAsync(ExistingRoute, request);
 
@@ -110,43 +110,43 @@ public sealed class VideoGamesControllerTests(IntegrationTestWebFactory factory)
     }
 
     [Fact]
-    public async Task ShouldNotUpdateVideoGameBecauseVideoGameNotFound()
+    public async Task ShouldNotUpdateListingBecauseListingNotFound()
     {
-        var game = VideoGameTestData.Updated();
-        var request = new UpdateVideoGameDto(game.Title, game.Price, game.ReleaseDate, game.Platform);
+        var game = ListingTestData.Updated();
+        var request = new UpdateListingDto(game.Title, game.Price, game.AvailableSince, game.Category);
 
-        using var response = await Client.PutAsJsonAsync($"{Route}/{VideoGameId.New()}", request);
+        using var response = await Client.PutAsJsonAsync($"{Route}/{ListingId.New()}", request);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         AssertDetails(await Find(_existing.Id), _existing);
     }
 
     [Fact]
-    public async Task ShouldDeleteVideoGame()
+    public async Task ShouldDeleteListing()
     {
         using var response = await Client.DeleteAsync(ExistingRoute);
 
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await Context.VideoGames.AnyAsync(game => game.Id == _existing.Id)).Should().BeFalse();
+        (await Context.Listings.AnyAsync(game => game.Id == _existing.Id)).Should().BeFalse();
     }
 
     [Fact]
-    public async Task ShouldNotDeleteVideoGameBecauseVideoGameNotFound()
+    public async Task ShouldNotDeleteListingBecauseListingNotFound()
     {
-        using var response = await Client.DeleteAsync($"{Route}/{VideoGameId.New()}");
+        using var response = await Client.DeleteAsync($"{Route}/{ListingId.New()}");
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         AssertDetails(await Find(_existing.Id), _existing);
     }
 
-    private Task<VideoGame> Find(VideoGameId id) =>
-        Context.VideoGames.AsNoTracking().SingleAsync(game => game.Id == id);
+    private Task<Listing> Find(ListingId id) =>
+        Context.Listings.AsNoTracking().SingleAsync(game => game.Id == id);
 
-    private static void AssertDetails(VideoGame actual, VideoGame expected)
+    private static void AssertDetails(Listing actual, Listing expected)
     {
         actual.Title.Should().Be(expected.Title);
         actual.Price.Should().Be(expected.Price);
-        actual.ReleaseDate.Should().Be(expected.ReleaseDate);
-        actual.Platform.Should().Be(expected.Platform);
+        actual.AvailableSince.Should().Be(expected.AvailableSince);
+        actual.Category.Should().Be(expected.Category);
     }
 }

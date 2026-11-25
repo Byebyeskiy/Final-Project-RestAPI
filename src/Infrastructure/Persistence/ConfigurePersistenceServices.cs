@@ -36,10 +36,10 @@ public static class ConfigurePersistenceServices
 
     private static void AddRepositories(this IServiceCollection services)
     {
-        services.AddScoped<VideoGameRepository>();
-        services.AddScoped<IVideoGameQueries>(provider =>
-            provider.GetRequiredService<VideoGameRepository>());
-        services.AddScoped<IVideoGameRepository>(provider =>
-            provider.GetRequiredService<VideoGameRepository>());
+        services.AddScoped<ListingRepository>();
+        services.AddScoped<IListingQueries>(provider =>
+            provider.GetRequiredService<ListingRepository>());
+        services.AddScoped<IListingRepository>(provider =>
+            provider.GetRequiredService<ListingRepository>());
     }
 }

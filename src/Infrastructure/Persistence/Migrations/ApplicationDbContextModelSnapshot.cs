@@ -22,12 +22,20 @@ namespace Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Domain.VideoGames.VideoGame", b =>
+            modelBuilder.Entity("Domain.Listings.Listing", b =>
                 {
                     b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<DateTime>("AvailableSince")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("available_since");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("varchar(50)")
+                        .HasColumnName("category");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -35,18 +43,9 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("timezone('utc', now())");
 
-                    b.Property<string>("Platform")
-                        .IsRequired()
-                        .HasColumnType("varchar(50)")
-                        .HasColumnName("platform");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("price");
-
-                    b.Property<DateTime>("ReleaseDate")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("release_date");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -54,13 +53,13 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnName("title");
 
                     b.HasKey("Id")
-                        .HasName("pk_video_games");
+                        .HasName("pk_listings");
 
                     b.HasIndex("Title")
                         .IsUnique()
-                        .HasDatabaseName("ix_video_games_title");
+                        .HasDatabaseName("ix_listings_title");
 
-                    b.ToTable("video_games", (string)null);
+                    b.ToTable("listings", (string)null);
                 });
 #pragma warning restore 612, 618
         }

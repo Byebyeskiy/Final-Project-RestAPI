@@ -1,17 +1,17 @@
-using Domain.VideoGames;
+using Domain.Listings;
 using Infrastructure.Persistence.Converters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Infrastructure.Persistence.Configurations;
 
-public class VideoGamesConfiguration : IEntityTypeConfiguration<VideoGame>
+public class ListingsConfiguration : IEntityTypeConfiguration<Listing>
 {
-    public void Configure(EntityTypeBuilder<VideoGame> builder)
+    public void Configure(EntityTypeBuilder<Listing> builder)
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id)
-            .HasConversion(id => id.Value, value => new VideoGameId(value))
+            .HasConversion(id => id.Value, value => new ListingId(value))
             .ValueGeneratedNever();
 
         builder.Property(x => x.Title)
@@ -25,11 +25,11 @@ public class VideoGamesConfiguration : IEntityTypeConfiguration<VideoGame>
             .HasColumnType("numeric(10,2)")
             .IsRequired();
 
-        builder.Property(x => x.ReleaseDate)
+        builder.Property(x => x.AvailableSince)
             .HasConversion(new DateTimeUtcConverter())
             .IsRequired();
 
-        builder.Property(x => x.Platform)
+        builder.Property(x => x.Category)
             .HasConversion<string>()
             .HasColumnType("varchar(50)")
             .IsRequired();

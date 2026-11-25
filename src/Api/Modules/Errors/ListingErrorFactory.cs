@@ -1,16 +1,16 @@
-using Application.VideoGames.Exceptions;
+using Application.Listings.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Modules.Errors;
 
-public static class VideoGameErrorFactory
+public static class ListingErrorFactory
 {
-    public static ObjectResult Create(VideoGameException exception)
+    public static ObjectResult Create(ListingException exception)
     {
         var status = exception switch
         {
-            VideoGameAlreadyExistsException => StatusCodes.Status409Conflict,
-            VideoGameNotFoundException => StatusCodes.Status404NotFound,
+            ListingAlreadyExistsException => StatusCodes.Status409Conflict,
+            ListingNotFoundException => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
         };
 

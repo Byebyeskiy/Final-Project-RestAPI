@@ -1,5 +1,5 @@
-﻿using System.Reflection;
-using Domain.VideoGames;
+using System.Reflection;
+using Domain.Listings;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -7,7 +7,7 @@ namespace Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : DbContext(options)
 {
-    public DbSet<VideoGame> VideoGames { get; init; }
+    public DbSet<Listing> Listings { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

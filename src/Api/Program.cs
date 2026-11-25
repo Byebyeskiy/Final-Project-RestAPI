@@ -9,7 +9,7 @@ builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options => options.SwaggerDoc("v1", new() { Title = "Resale Marketplace API", Version = "v1" }));
 
 var app = builder.Build();
 
