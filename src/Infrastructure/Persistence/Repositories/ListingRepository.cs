@@ -33,9 +33,20 @@ public class ListingRepository(ApplicationDbContext context) : IListingRepositor
 
     public async Task<Listing> Update(Listing listing, CancellationToken cancellationToken)
     {
-        context.Listings.Update(listing);
         await context.SaveChangesAsync(cancellationToken);
         return listing;
+    }
+
+    public async Task<bool> TryModerate(ListingId id, ListingStatus status, string? rejectionReason,
+        CancellationToken cancellationToken)
+    {
+        var updated = await context.Listings
+            .Where(listing => listing.Id == id && listing.Status == ListingStatus.Pending)
+            .ExecuteUpdateAsync(setters => setters
+                .SetProperty(listing => listing.Status, status)
+                .SetProperty(listing => listing.RejectionReason, rejectionReason), cancellationToken);
+
+        return updated == 1;
     }
 
     public async Task Delete(Listing listing, CancellationToken cancellationToken)

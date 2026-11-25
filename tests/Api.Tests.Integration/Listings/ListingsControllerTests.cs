@@ -44,6 +44,8 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
         dto.Should().NotBeNull();
         var saved = await Find(new ListingId(dto!.Id));
         AssertDetails(saved, game);
+        saved.Status.Should().Be(ListingStatus.Pending);
+        dto.Status.Should().Be(nameof(ListingStatus.Pending));
         using var readResponse = await Client.GetAsync(response.Headers.Location);
         readResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var readDto = await readResponse.Content.ReadFromJsonAsync<ListingDto>();
@@ -137,6 +139,68 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
         AssertDetails(await Find(_existing.Id), _existing);
+    }
+
+    [Fact]
+    public async Task ShouldApprovePendingListing()
+    {
+        using var response = await Client.PostAsync($"{ExistingRoute}/approve", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<ListingDto>();
+        dto!.Status.Should().Be(nameof(ListingStatus.Approved));
+        (await Find(_existing.Id)).Status.Should().Be(ListingStatus.Approved);
+    }
+
+    [Fact]
+    public async Task ShouldRejectPendingListingWithReason()
+    {
+        const string reason = "Add a clearer description";
+
+        using var response = await Client.PostAsJsonAsync($"{ExistingRoute}/reject", new RejectListingDto(reason));
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var dto = await response.Content.ReadFromJsonAsync<ListingDto>();
+        dto!.Status.Should().Be(nameof(ListingStatus.Rejected));
+        dto.RejectionReason.Should().Be(reason);
+        var saved = await Find(_existing.Id);
+        saved.Status.Should().Be(ListingStatus.Rejected);
+        saved.RejectionReason.Should().Be(reason);
+    }
+
+    [Fact]
+    public async Task ShouldRequireRejectionReason()
+    {
+        using var response = await Client.PostAsJsonAsync($"{ExistingRoute}/reject", new RejectListingDto(" "));
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await Find(_existing.Id)).Status.Should().Be(ListingStatus.Pending);
+    }
+
+    [Fact]
+    public async Task ShouldReturnNotFoundWhenModeratingMissingListing()
+    {
+        using var response = await Client.PostAsync($"{Route}/{ListingId.New()}/approve", null);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await Find(_existing.Id)).Status.Should().Be(ListingStatus.Pending);
+    }
+
+    [Fact]
+    public async Task ShouldAcceptOnlyOneConcurrentModerationDecision()
+    {
+        var approve = Client.PostAsync($"{ExistingRoute}/approve", null);
+        var reject = Client.PostAsJsonAsync($"{ExistingRoute}/reject", new RejectListingDto("Missing details"));
+
+        await Task.WhenAll(approve, reject);
+        using var approved = await approve;
+        using var rejected = await reject;
+
+        new[] { approved.StatusCode, rejected.StatusCode }.Should()
+            .BeEquivalentTo(new[] { HttpStatusCode.OK, HttpStatusCode.Conflict });
+        var saved = await Find(_existing.Id);
+        var winningStatus = approved.IsSuccessStatusCode ? ListingStatus.Approved : ListingStatus.Rejected;
+        saved.Status.Should().Be(winningStatus);
     }
 
     private Task<Listing> Find(ListingId id) =>

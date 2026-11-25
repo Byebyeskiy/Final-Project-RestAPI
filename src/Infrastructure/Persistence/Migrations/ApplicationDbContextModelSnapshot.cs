@@ -47,6 +47,19 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("numeric(10,2)")
                         .HasColumnName("price");
 
+                    b.Property<string>("RejectionReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rejection_reason");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Pending")
+                        .HasColumnName("status");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("varchar(255)")

@@ -8,6 +8,8 @@ public class Listing
     public DateTime AvailableSince { get; private set; }
     public ListingCategory Category { get; private set; }
     public DateTime CreatedAt { get; }
+    public ListingStatus Status { get; private set; } = ListingStatus.Pending;
+    public string? RejectionReason { get; private set; }
 
     private Listing(ListingId id, string title, decimal price, DateTime availableSince,
         ListingCategory category, DateTime createdAt)

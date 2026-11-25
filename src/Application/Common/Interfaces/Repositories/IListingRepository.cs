@@ -9,5 +9,7 @@ public interface IListingRepository
     Task<Option<Listing>> GetByTitle(string title, CancellationToken cancellationToken);
     Task<Listing> Add(Listing listing, CancellationToken cancellationToken);
     Task<Listing> Update(Listing listing, CancellationToken cancellationToken);
+    Task<bool> TryModerate(ListingId id, ListingStatus status, string? rejectionReason,
+        CancellationToken cancellationToken);
     Task Delete(Listing listing, CancellationToken cancellationToken);
 }

@@ -14,3 +14,18 @@ Content-Type: application/json
   "availableSince": "2026-11-01T00:00:00Z",
   "category": 0
 }
+
+###
+
+@listingId = replace-with-id-from-create-response
+
+POST {{Api_HostAddress}}/listings/{{listingId}}/approve
+
+###
+
+POST {{Api_HostAddress}}/listings/{{listingId}}/reject
+Content-Type: application/json
+
+{
+  "reason": "Add a clearer description"
+}

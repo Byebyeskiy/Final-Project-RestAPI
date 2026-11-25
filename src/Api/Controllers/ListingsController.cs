@@ -57,6 +57,25 @@ public class ListingsController(ISender sender, IListingQueries queries) : Contr
             error => ListingErrorFactory.Create(error));
     }
 
+    [HttpPost("{id:guid}/approve")]
+    public Task<ActionResult<ListingDto>> ApproveListing(Guid id, CancellationToken cancellationToken)
+        => Moderate(new ModerateListingCommand(new ListingId(id), ListingStatus.Approved), cancellationToken);
+
+    [HttpPost("{id:guid}/reject")]
+    public Task<ActionResult<ListingDto>> RejectListing(
+        Guid id, [FromBody] RejectListingDto request, CancellationToken cancellationToken)
+        => Moderate(new ModerateListingCommand(new ListingId(id), ListingStatus.Rejected, request.Reason),
+            cancellationToken);
+
+    private async Task<ActionResult<ListingDto>> Moderate(
+        ModerateListingCommand command, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(command, cancellationToken);
+        return result.Match<ActionResult<ListingDto>>(
+            listing => Ok(ListingDto.FromDomainModel(listing)),
+            error => ListingErrorFactory.Create(error));
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteListing(Guid id, CancellationToken cancellationToken)
     {

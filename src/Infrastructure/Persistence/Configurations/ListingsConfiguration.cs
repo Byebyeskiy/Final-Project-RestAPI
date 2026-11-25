@@ -34,6 +34,14 @@ public class ListingsConfiguration : IEntityTypeConfiguration<Listing>
             .HasColumnType("varchar(50)")
             .IsRequired();
 
+        builder.Property(x => x.Status)
+            .HasConversion<string>()
+            .HasMaxLength(16)
+            .HasDefaultValue(ListingStatus.Pending)
+            .IsRequired();
+
+        builder.Property(x => x.RejectionReason).HasMaxLength(500);
+
         builder.Property(x => x.CreatedAt)
             .HasConversion(new DateTimeUtcConverter())
             .HasDefaultValueSql("timezone('utc', now())")

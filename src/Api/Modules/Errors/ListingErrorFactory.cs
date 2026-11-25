@@ -9,7 +9,7 @@ public static class ListingErrorFactory
     {
         var status = exception switch
         {
-            ListingAlreadyExistsException => StatusCodes.Status409Conflict,
+            ListingAlreadyExistsException or ListingAlreadyModeratedException => StatusCodes.Status409Conflict,
             ListingNotFoundException => StatusCodes.Status404NotFound,
             _ => StatusCodes.Status500InternalServerError
         };
