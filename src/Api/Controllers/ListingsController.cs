@@ -1,5 +1,7 @@
 using Api.Dtos;
+using Api.Modules;
 using Api.Modules.Errors;
+using Microsoft.AspNetCore.Authorization;
 using Application.Common.Interfaces.Queries;
 using Application.Listings.Commands;
 using Domain.Listings;
@@ -57,10 +59,12 @@ public class ListingsController(ISender sender, IListingQueries queries) : Contr
             error => ListingErrorFactory.Create(error));
     }
 
+    [Authorize(AuthenticationSchemes = AdminAuthenticationHandler.SchemeName, Roles = AdminAuthenticationHandler.RoleName)]
     [HttpPost("{id:guid}/approve")]
     public Task<ActionResult<ListingDto>> ApproveListing(Guid id, CancellationToken cancellationToken)
         => Moderate(new ModerateListingCommand(new ListingId(id), ListingStatus.Approved), cancellationToken);
 
+    [Authorize(AuthenticationSchemes = AdminAuthenticationHandler.SchemeName, Roles = AdminAuthenticationHandler.RoleName)]
     [HttpPost("{id:guid}/reject")]
     public Task<ActionResult<ListingDto>> RejectListing(
         Guid id, [FromBody] RejectListingDto request, CancellationToken cancellationToken)

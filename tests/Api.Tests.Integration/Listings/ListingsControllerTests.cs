@@ -20,6 +20,7 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
 
     public async Task InitializeAsync()
     {
+        Client.DefaultRequestHeaders.Add("X-Admin-Key", IntegrationTestWebFactory.AdminKey);
         Context.Listings.Add(_existing);
         await Context.SaveChangesAsync();
         Context.ChangeTracker.Clear();
@@ -201,6 +202,29 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
         var saved = await Find(_existing.Id);
         var winningStatus = approved.IsSuccessStatusCode ? ListingStatus.Approved : ListingStatus.Rejected;
         saved.Status.Should().Be(winningStatus);
+    }
+
+    [Theory]
+    [InlineData("approve", false)]
+    [InlineData("approve", true)]
+    [InlineData("reject", false)]
+    [InlineData("reject", true)]
+    public async Task ShouldRequireValidAdminKeyForModeration(string action, bool sendInvalidKey)
+    {
+        Client.DefaultRequestHeaders.Remove("X-Admin-Key");
+        if (sendInvalidKey)
+        {
+            Client.DefaultRequestHeaders.Add("X-Admin-Key", "invalid");
+        }
+
+        using var response = await Client.PostAsJsonAsync(
+            $"{ExistingRoute}/{action}", new RejectListingDto("Missing information"));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await Find(_existing.Id)).Status.Should().Be(ListingStatus.Pending);
+
+        using var catalogResponse = await Client.GetAsync(Route);
+        catalogResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     private Task<Listing> Find(ListingId id) =>

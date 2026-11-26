@@ -10,6 +10,8 @@ namespace Tests.Common;
 
 public sealed class IntegrationTestWebFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
+    public const string AdminKey = "integration-only-moderation-test-key";
+
     private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
 
@@ -18,6 +20,7 @@ public sealed class IntegrationTestWebFactory : WebApplicationFactory<Program>, 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Test");
+        builder.UseSetting("Moderation:AdminKey", AdminKey);
         builder.UseSetting("ConnectionStrings:DefaultConnection", _database.GetConnectionString());
         builder.ConfigureTestServices(services =>
             services.AddAuthentication(TestAuthHandler.SchemeName)

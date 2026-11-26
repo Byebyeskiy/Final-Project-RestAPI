@@ -17,13 +17,16 @@ Content-Type: application/json
 
 ###
 
+@adminKey = replace-with-configured-admin-key
 @listingId = replace-with-id-from-create-response
 
 POST {{Api_HostAddress}}/listings/{{listingId}}/approve
+X-Admin-Key: {{adminKey}}
 
 ###
 
 POST {{Api_HostAddress}}/listings/{{listingId}}/reject
+X-Admin-Key: {{adminKey}}
 Content-Type: application/json
 
 {
