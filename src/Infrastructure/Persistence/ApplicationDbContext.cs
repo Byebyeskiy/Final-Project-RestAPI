@@ -8,6 +8,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : DbContext(options)
 {
     public DbSet<Listing> Listings { get; init; }
+    public DbSet<ListingReservation> ListingReservations { get; init; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

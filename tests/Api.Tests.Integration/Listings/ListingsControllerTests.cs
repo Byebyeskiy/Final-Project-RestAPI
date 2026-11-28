@@ -28,6 +28,7 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
 
     public async Task DisposeAsync()
     {
+        await Context.ListingReservations.ExecuteDeleteAsync();
         await Context.Listings.ExecuteDeleteAsync();
         Context.ChangeTracker.Clear();
     }
@@ -225,6 +226,94 @@ public sealed class ListingsControllerTests(IntegrationTestWebFactory factory)
 
         using var catalogResponse = await Client.GetAsync(Route);
         catalogResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
+    public async Task ShouldReserveApprovedListingAndDecreaseStock()
+    {
+        var game = ListingTestData.NewGame();
+        using var created = await Client.PostAsJsonAsync(Route, new CreateListingDto(
+            game.Title, game.Price, game.AvailableSince, game.Category, Quantity: 3));
+        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        var listing = await created.Content.ReadFromJsonAsync<ListingDto>();
+        listing!.AvailableQuantity.Should().Be(3);
+        var path = $"{Route}/{listing.Id}";
+        using var approved = await Client.PostAsync($"{path}/approve", null);
+        approved.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await Client.PostAsJsonAsync($"{path}/reservations", new ReserveListingDto(2));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var receipt = await response.Content.ReadFromJsonAsync<ListingReservationDto>();
+        var stored = await Context.ListingReservations.AsNoTracking().SingleAsync();
+        receipt!.Id.Should().Be(stored.Id);
+        stored.ListingId.Value.Should().Be(listing.Id);
+        stored.Quantity.Should().Be(2);
+        (await Find(stored.ListingId)).AvailableQuantity.Should().Be(1);
+        using var read = await Client.GetAsync(path);
+        var updated = await read.Content.ReadFromJsonAsync<ListingDto>();
+        updated!.AvailableQuantity.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ShouldRejectReservationForPendingListing()
+    {
+        using var response = await Client.PostAsJsonAsync(
+            $"{ExistingRoute}/reservations", new ReserveListingDto(1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Find(_existing.Id)).AvailableQuantity.Should().Be(1);
+        (await Context.ListingReservations.CountAsync()).Should().Be(0);
+    }
+
+    [Theory]
+    [InlineData(0, HttpStatusCode.BadRequest)]
+    [InlineData(2, HttpStatusCode.Conflict)]
+    public async Task ShouldRejectInvalidOrUnavailableQuantity(int quantity, HttpStatusCode expectedStatus)
+    {
+        using var approved = await Client.PostAsync($"{ExistingRoute}/approve", null);
+        approved.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var response = await Client.PostAsJsonAsync(
+            $"{ExistingRoute}/reservations", new ReserveListingDto(quantity));
+
+        response.StatusCode.Should().Be(expectedStatus);
+        (await Find(_existing.Id)).AvailableQuantity.Should().Be(1);
+        (await Context.ListingReservations.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ShouldReturnNotFoundWhenReservingUnknownListing()
+    {
+        using var response = await Client.PostAsJsonAsync(
+            $"{Route}/{ListingId.New()}/reservations", new ReserveListingDto(1));
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        (await Context.ListingReservations.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ShouldAllowOnlyOneConcurrentReservationForLastUnit()
+    {
+        using var approved = await Client.PostAsync($"{ExistingRoute}/approve", null);
+        approved.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        var responses = await Task.WhenAll(
+            Client.PostAsJsonAsync($"{ExistingRoute}/reservations", new ReserveListingDto(1)),
+            Client.PostAsJsonAsync($"{ExistingRoute}/reservations", new ReserveListingDto(1)));
+        using var first = responses[0];
+        using var second = responses[1];
+
+        new[] { first.StatusCode, second.StatusCode }.Should()
+            .BeEquivalentTo(new[] { HttpStatusCode.Created, HttpStatusCode.Conflict });
+        (await Find(_existing.Id)).AvailableQuantity.Should().Be(0);
+        var reservation = await Context.ListingReservations.AsNoTracking().SingleAsync();
+        reservation.ListingId.Should().Be(_existing.Id);
+        reservation.Quantity.Should().Be(1);
+
+        using var delete = await Client.DeleteAsync(ExistingRoute);
+        delete.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await Context.ListingReservations.CountAsync()).Should().Be(1);
     }
 
     private Task<Listing> Find(ListingId id) =>

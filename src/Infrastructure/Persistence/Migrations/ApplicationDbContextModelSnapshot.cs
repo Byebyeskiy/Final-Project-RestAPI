@@ -28,6 +28,12 @@ namespace Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("AvailableQuantity")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1)
+                        .HasColumnName("available_quantity");
+
                     b.Property<DateTime>("AvailableSince")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("available_since");
@@ -72,7 +78,50 @@ namespace Infrastructure.Persistence.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_listings_title");
 
-                    b.ToTable("listings", (string)null);
+                    b.ToTable("listings", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_listings_nonnegative_quantity", "available_quantity >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Listings.ListingReservation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("ListingId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("listing_id");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer")
+                        .HasColumnName("quantity");
+
+                    b.HasKey("Id")
+                        .HasName("pk_listing_reservations");
+
+                    b.HasIndex("ListingId")
+                        .HasDatabaseName("ix_listing_reservations_listing_id");
+
+                    b.ToTable("listing_reservations", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_listing_reservations_positive_quantity", "quantity > 0");
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Listings.ListingReservation", b =>
+                {
+                    b.HasOne("Domain.Listings.Listing", null)
+                        .WithMany()
+                        .HasForeignKey("ListingId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_listing_reservations_listings_listing_id");
                 });
 #pragma warning restore 612, 618
         }

@@ -11,5 +11,6 @@ public interface IListingRepository
     Task<Listing> Update(Listing listing, CancellationToken cancellationToken);
     Task<bool> TryModerate(ListingId id, ListingStatus status, string? rejectionReason,
         CancellationToken cancellationToken);
+    Task<Option<ListingReservation>> TryReserve(ListingId id, int quantity, CancellationToken cancellationToken);
     Task Delete(Listing listing, CancellationToken cancellationToken);
 }

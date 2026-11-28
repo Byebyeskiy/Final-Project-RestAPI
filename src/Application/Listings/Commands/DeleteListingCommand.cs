@@ -28,6 +28,10 @@ public sealed class DeleteListingCommandHandler(IListingRepository repository, I
                 },
                 () => Task.FromResult<Either<ListingException, Unit>>(new ListingNotFoundException(id)));
         }
+        catch (ListingHasReservationsException exception)
+        {
+            return exception;
+        }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
             logger.LogError(exception, "Listing operation failed for {ListingId}", id);

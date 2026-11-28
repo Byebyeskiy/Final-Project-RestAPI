@@ -19,3 +19,9 @@ public sealed class ListingAlreadyModeratedException(ListingId id)
 
 public sealed class ListingUnhandledException(ListingId id, Exception inner)
     : ListingException(id, $"Could not save the resale item change for '{id}'", inner);
+
+public sealed class ListingUnavailableException(ListingId id)
+    : ListingException(id, $"Listing '{id}' is not approved or does not have enough stock");
+
+public sealed class ListingHasReservationsException(ListingId id)
+    : ListingException(id, $"Listing '{id}' cannot be deleted while it has reservations");

@@ -8,6 +8,7 @@ public class Listing
     public DateTime AvailableSince { get; private set; }
     public ListingCategory Category { get; private set; }
     public DateTime CreatedAt { get; }
+    public int AvailableQuantity { get; private set; } = 1;
     public ListingStatus Status { get; private set; } = ListingStatus.Pending;
     public string? RejectionReason { get; private set; }
 
@@ -17,8 +18,11 @@ public class Listing
             = (id, title, price, availableSince, category, createdAt);
 
     public static Listing New(ListingId id, string title, decimal price,
-        DateTime availableSince, ListingCategory category)
-        => new(id, title, price, availableSince, category, DateTime.UtcNow);
+        DateTime availableSince, ListingCategory category, int quantity = 1)
+        => new(id, title, price, availableSince, category, DateTime.UtcNow)
+        {
+            AvailableQuantity = quantity
+        };
 
     public void UpdateDetails(string title, decimal price, DateTime availableSince,
         ListingCategory category)

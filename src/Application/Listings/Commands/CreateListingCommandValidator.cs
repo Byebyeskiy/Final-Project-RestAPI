@@ -10,5 +10,6 @@ public sealed class CreateListingCommandValidator : AbstractValidator<CreateList
         RuleFor(command => command.Price).InclusiveBetween(0.01m, 1_000_000m);
         RuleFor(command => command.AvailableSince).NotEmpty();
         RuleFor(command => command.Category).IsInEnum();
+        RuleFor(command => command.Quantity).GreaterThan(0);
     }
 }

@@ -9,7 +9,9 @@ public class ListingsConfiguration : IEntityTypeConfiguration<Listing>
 {
     public void Configure(EntityTypeBuilder<Listing> builder)
     {
+        builder.ToTable(table => table.HasCheckConstraint("ck_listings_nonnegative_quantity", "available_quantity >= 0"));
         builder.HasKey(x => x.Id);
+        builder.Property(listing => listing.AvailableQuantity).HasDefaultValue(1);
         builder.Property(x => x.Id)
             .HasConversion(id => id.Value, value => new ListingId(value))
             .ValueGeneratedNever();

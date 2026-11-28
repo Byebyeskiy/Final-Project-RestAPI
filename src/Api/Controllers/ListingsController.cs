@@ -35,7 +35,7 @@ public class ListingsController(ISender sender, IListingQueries queries) : Contr
         [FromBody] CreateListingDto request, CancellationToken cancellationToken)
     {
         var result = await sender.Send(new CreateListingCommand(
-            request.Title, request.Price, request.AvailableSince, request.Category), cancellationToken);
+            request.Title, request.Price, request.AvailableSince, request.Category, request.Quantity), cancellationToken);
 
         return result.Match<ActionResult<ListingDto>>(
             game =>
@@ -77,6 +77,21 @@ public class ListingsController(ISender sender, IListingQueries queries) : Contr
         var result = await sender.Send(command, cancellationToken);
         return result.Match<ActionResult<ListingDto>>(
             listing => Ok(ListingDto.FromDomainModel(listing)),
+            error => ListingErrorFactory.Create(error));
+    }
+
+    [HttpPost("{id:guid}/reservations")]
+    [ProducesResponseType<ListingReservationDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ListingReservationDto>> ReserveListing(
+        Guid id, [FromBody] ReserveListingDto request, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new ReserveListingCommand(new ListingId(id), request.Quantity),
+            cancellationToken);
+        return result.Match<ActionResult<ListingReservationDto>>(
+            reservation => StatusCode(StatusCodes.Status201Created, ListingReservationDto.FromDomainModel(reservation)),
             error => ListingErrorFactory.Create(error));
     }
 

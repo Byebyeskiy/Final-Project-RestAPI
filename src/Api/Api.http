@@ -32,3 +32,13 @@ Content-Type: application/json
 {
   "reason": "Add a clearer description"
 }
+
+
+###
+
+POST {{Api_HostAddress}}/listings/{{listingId}}/reservations
+Content-Type: application/json
+
+{
+  "quantity": 1
+}

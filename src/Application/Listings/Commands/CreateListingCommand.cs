@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Listings.Commands;
 
-public sealed record CreateListingCommand(string Title, decimal Price, DateTime AvailableSince, ListingCategory Category)
+public sealed record CreateListingCommand(string Title, decimal Price, DateTime AvailableSince, ListingCategory Category, int Quantity = 1)
     : IRequest<Either<ListingException, Listing>>;
 
 public sealed class CreateListingCommandHandler(IListingRepository repository, ILogger<CreateListingCommandHandler> logger)
@@ -24,7 +24,7 @@ public sealed class CreateListingCommandHandler(IListingRepository repository, I
                     new ListingAlreadyExistsException(game.Id, request.Title)),
                 async () =>
                 {
-                    var game = Listing.New(id, request.Title, request.Price, request.AvailableSince, request.Category);
+                    var game = Listing.New(id, request.Title, request.Price, request.AvailableSince, request.Category, request.Quantity);
                     return await repository.Add(game, cancellationToken);
                 });
         }

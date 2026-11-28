@@ -1,6 +1,9 @@
 using Application.Common.Interfaces.Queries;
 using Application.Common.Interfaces.Repositories;
 using Domain.Listings;
+using Application.Listings.Exceptions;
+using Infrastructure.Persistence.Configurations;
+using Npgsql;
 using LanguageExt;
 using static LanguageExt.Prelude;
 using Microsoft.EntityFrameworkCore;
@@ -49,9 +52,45 @@ public class ListingRepository(ApplicationDbContext context) : IListingRepositor
         return updated == 1;
     }
 
+    public async Task<Option<ListingReservation>> TryReserve(ListingId id, int quantity,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        // PostgreSQL rechecks the stock condition after a competing update releases its row lock.
+        var updated = await context.Listings
+            .Where(listing => listing.Id == id && listing.Status == ListingStatus.Approved &&
+                listing.AvailableQuantity >= quantity)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(listing => listing.AvailableQuantity,
+                listing => listing.AvailableQuantity - quantity), cancellationToken);
+
+        if (updated == 0)
+        {
+            return None;
+        }
+
+        var reservation = new ListingReservation(Guid.NewGuid(), id, quantity, DateTime.UtcNow);
+        context.ListingReservations.Add(reservation);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return reservation;
+    }
+
     public async Task Delete(Listing listing, CancellationToken cancellationToken)
     {
         context.Listings.Remove(listing);
-        await context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (exception.InnerException is PostgresException
+            {
+                SqlState: PostgresErrorCodes.ForeignKeyViolation,
+                ConstraintName: ListingReservationsConfiguration.ListingForeignKey
+            })
+        {
+            throw new ListingHasReservationsException(listing.Id);
+        }
+
     }
 }
